@@ -14,11 +14,18 @@ export async function onRequest(context) {
 
   if (request.method === "POST") {
     try {
+      if (!env.FILES_STORE) {
+        return new Response(JSON.stringify({ error: "FILES_STORE_NOT_BOUND" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       const formData = await request.formData();
       const file = formData.get("file");
 
       if (!file) {
-        return new Response(JSON.stringify({ error: "Файл не выбран" }), {
+        return new Response(JSON.stringify({ error: "NO_FILE_SELECTED" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });

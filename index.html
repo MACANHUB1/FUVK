@@ -3,71 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Быстрый Хостинг Файлов & Скриптов</title>
+    <title>VectorShare</title></title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121214;
-            color: #e1e1e6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: #202024;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-            text-align: center;
-            width: 100%;
-            max-width: 450px;
-        }
-        h1 { font-size: 24px; margin-bottom: 20px; color: #04d361; }
-        .upload-area {
-            border: 2px dashed #4d4d57;
-            padding: 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .upload-area:hover { border-color: #04d361; background: #28282e; }
+        body { font-family: sans-serif; background: #121214; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: #202024; padding: 40px; border-radius: 12px; text-align: center; width: 100%; max-width: 450px; }
+        .upload-area { border: 2px dashed #4d4d57; padding: 30px; border-radius: 8px; cursor: pointer; }
+        .upload-area:hover { border-color: #04d361; }
         #file-input { display: none; }
         .status { margin-top: 20px; font-weight: bold; }
-        .result-box {
-            margin-top: 20px;
-            background: #121214;
-            padding: 15px;
-            border-radius: 6px;
-            display: none;
-            word-break: break-all;
-        }
-        .result-box a { color: #8257e5; text-decoration: none; font-weight: bold; }
-        .result-box a:hover { text-decoration: underline; }
+        .result-box { margin-top: 20px; background: #121214; padding: 15px; border-radius: 6px; display: none; word-break: break-all; }
+        a { color: #8257e5; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Загрузка файлов и скриптов</h1>
+    <h1 style="color:#04d361;">Загрузка файлов</h1>
     <div class="upload-area" id="drop-zone">
-        <p>Нажмите сюда или перетащите файл для загрузки</p>
-        <p style="font-size: 12px; color: #7c7c8a;">(LUA, EXE, TXT и любые другие файлы)</p>
+        <p>Нажмите сюда для загрузки файла</p>
         <input type="file" id="file-input">
     </div>
-
     <div class="status" id="status-text"></div>
-    
     <div class="result-box" id="result-container">
-        <p style="margin: 0 0 5px 0; font-size: 14px; color: #7c7c8a;">Ваша прямая ссылка:</p>
+        <p style="color: #7c7c8a; margin:0;">Raw/Dowland Ссылка:</p>
         <a id="file-link" href="#" target="_blank"></a>
     </div>
 </div>
 
 <script>
-    const WORKER_URL = "summer-mountain-e527.luaspy.workers.dev"; 
-
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const statusText = document.getElementById('status-text');
@@ -75,15 +38,10 @@
     const fileLink = document.getElementById('file-link');
 
     dropZone.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-            uploadFile(e.target.files[0]);
-        }
-    });
+    fileInput.addEventListener('change', (e) => { if (e.target.files.length > 0) uploadFile(e.target.files[0]); });
 
     async function uploadFile(file) {
-        statusText.innerText = "Загрузка файла...";
+        statusText.innerText = "Загрузка...";
         statusText.style.color = "#ffcd1e";
         resultContainer.style.display = "none";
 
@@ -91,26 +49,24 @@
         formData.append('file', file);
 
         try {
-            const response = await fetch(`${WORKER_URL}/upload`, {
+            const response = await fetch('/upload', {
                 method: 'POST',
                 body: formData
             });
 
-            if (!response.ok) throw new Error('Ошибка сервера при загрузке');
+            if (!response.ok) throw new Error('Ошибка сервера');
 
             const data = await response.json();
             
-            statusText.innerText = "Успешно загружено!";
+            statusText.innerText = "Готово!";
             statusText.style.color = "#04d361";
 
-            const finalLink = `${WORKER_URL}/${data.id}`;
-            
+            const finalLink = `${window.location.origin}/_raw/${data.id}`;
             fileLink.href = finalLink;
             fileLink.innerText = finalLink;
             resultContainer.style.display = "block";
-
         } catch (error) {
-            statusText.innerText = "Ошибка: " + error.message;
+            statusText.innerText = "Ошибка загрузки";
             statusText.style.color = "#f75a68";
         }
     }

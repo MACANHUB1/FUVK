@@ -3,118 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Form Automation</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Быстрый Хостинг Файлов & Скриптов</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121214;
+            color: #e1e1e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #202024;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 100%;
+            max-width: 450px;
+        }
+        h1 { font-size: 24px; margin-bottom: 20px; color: #04d361; }
+        .upload-area {
+            border: 2px dashed #4d4d57;
+            padding: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .upload-area:hover { border-color: #04d361; background: #28282e; }
+        #file-input { display: none; }
+        .status { margin-top: 20px; font-weight: bold; }
+        .result-box {
+            margin-top: 20px;
+            background: #121214;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+            word-break: break-all;
+        }
+        .result-box a { color: #8257e5; text-decoration: none; font-weight: bold; }
+        .result-box a:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Google Form Automation Tool</h1>
-        
-        <div id="step-1">
-            <input type="text" id="form-url" placeholder="Вставьте ссылку на Google Форму">
-            <button id="btn-parse">Анализировать форму</button>
-        </div>
 
-        <div id="step-2" class="hidden">
-            <div id="dynamic-fields"></div>
-            <div class="controls">
-                <label for="submit-count">Количество отправок:</label>
-                <input type="number" id="submit-count" value="5" min="1" max="100">
-                <button id="btn-start">Запустить отправку</button>
-            </div>
-            <div id="status"></div>
-        </div>
+<div class="container">
+    <h1>Загрузка файлов и скриптов</h1>
+    <div class="upload-area" id="drop-zone">
+        <p>Нажмите сюда или перетащите файл для загрузки</p>
+        <p style="font-size: 12px; color: #7c7c8a;">(LUA, EXE, TXT и любые другие файлы)</p>
+        <input type="file" id="file-input">
     </div>
 
-    <script>
-        const btnParse = document.getElementById('btn-parse');
-        const btnStart = document.getElementById('btn-start');
-        const formUrlInput = document.getElementById('form-url');
-        const step1 = document.getElementById('step-1');
-        const step2 = document.getElementById('step-2');
-        const dynamicFields = document.getElementById('dynamic-fields');
-        const statusDiv = document.getElementById('status');
+    <div class="status" id="status-text"></div>
+    
+    <div class="result-box" id="result-container">
+        <p style="margin: 0 0 5px 0; font-size: 14px; color: #7c7c8a;">Ваша прямая ссылка:</p>
+        <a id="file-link" href="#" target="_blank"></a>
+    </div>
+</div>
 
-        let currentFormUrl = '';
+<script>
+    const WORKER_URL = "summer-mountain-e527.luaspy.workers.dev"; 
 
-        btnParse.addEventListener('click', async () => {
-            currentFormUrl = formUrlInput.value.trim();
-            if (!currentFormUrl) return;
+    const dropZone = document.getElementById('drop-zone');
+    const fileInput = document.getElementById('file-input');
+    const statusText = document.getElementById('status-text');
+    const resultContainer = document.getElementById('result-container');
+    const fileLink = document.getElementById('file-link');
 
-            btnParse.disabled = true;
-            btnParse.innerText = 'Анализ...';
+    dropZone.addEventListener('click', () => fileInput.click());
 
-            try {
-                const response = await fetch('/api/parse', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: currentFormUrl })
-                });
-                const data = await response.json();
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            uploadFile(e.target.files[0]);
+        }
+    });
 
-                if (data.error) {
-                    alert(data.error);
-                    return;
-                }
+    async function uploadFile(file) {
+        statusText.innerText = "Загрузка файла...";
+        statusText.style.color = "#ffcd1e";
+        resultContainer.style.display = "none";
 
-                dynamicFields.innerHTML = '';
-                data.fields.forEach(field => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'field-block';
-                    
-                    const label = document.createElement('label');
-                    label.innerText = field.label;
-                    
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.name = field.id;
-                    input.placeholder = 'Значение для ' + field.id;
-                    
-                    wrapper.appendChild(label);
-                    wrapper.appendChild(input);
-                    dynamicFields.appendChild(wrapper);
-                });
+        const formData = new FormData();
+        formData.append('file', file);
 
-                step1.classList.add('hidden');
-                step2.classList.remove('hidden');
-            } catch (e) {
-                alert('Ошибка при анализе формы');
-            } finally {
-                btnParse.disabled = false;
-                btnParse.innerText = 'Анализировать форму';
-            }
-        });
-
-        btnStart.addEventListener('click', async () => {
-            const inputs = dynamicFields.querySelectorAll('input');
-            const count = parseInt(document.getElementById('submit-count').value) || 1;
-            
-            const formData = {};
-            inputs.forEach(input => {
-                formData[input.name] = input.value;
+        try {
+            const response = await fetch(`${WORKER_URL}/upload`, {
+                method: 'POST',
+                body: formData
             });
 
-            btnStart.disabled = true;
-            statusDiv.innerText = 'Отправка пакетов...';
+            if (!response.ok) throw new Error('Ошибка сервера при загрузке');
 
-            try {
-                const response = await fetch('/api/submit', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        url: currentFormUrl,
-                        data: formData,
-                        count: count
-                    })
-                });
-                const result = await response.json();
-                statusDiv.innerText = 'Успешно отправлено: ' + result.successCount + ' из ' + count;
-            } catch (e) {
-                statusDiv.innerText = 'Ошибка при выполнении отправки';
-            } finally {
-                btnStart.disabled = false;
-            }
-        });
-    </script>
+            const data = await response.json();
+            
+            statusText.innerText = "Успешно загружено!";
+            statusText.style.color = "#04d361";
+
+            const finalLink = `${WORKER_URL}/${data.id}`;
+            
+            fileLink.href = finalLink;
+            fileLink.innerText = finalLink;
+            resultContainer.style.display = "block";
+
+        } catch (error) {
+            statusText.innerText = "Ошибка: " + error.message;
+            statusText.style.color = "#f75a68";
+        }
+    }
+</script>
 </body>
 </html>

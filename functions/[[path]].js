@@ -1,16 +1,25 @@
 export async function onRequest(context) {
   const { request, env } = context;
   const url = new URL(request.url);
+
+  if (!url.pathname.startsWith('/_raw/')) {
+    return context.next();
+  }
+
   const fileId = url.pathname.split('/_raw/')[1];
 
   if (!fileId) {
     return new Response("ID не указан", { status: 400 });
   }
 
+  if (!env.FILES_STORE) {
+    return new Response("БАЗА ДАННЫХ KV НЕ ПОДКЛЮЧЕНА В НАСТРОЙКАХ PAGES", { status: 500 });
+  }
+
   const { value, metadata } = await env.FILES_STORE.getWithMetadata(fileId, { type: "arrayBuffer" });
 
   if (!value) {
-    return new Response("Файл не найден", { status: 404 });
+    return new Response("Файл не найден в базе KV", { status: 404 });
   }
 
   const corsHeaders = {
@@ -23,7 +32,7 @@ export async function onRequest(context) {
   const originalName = metadata?.name || fileId;
   const lowerId = fileId.toLowerCase();
 
-  if (lowerId.endsWith('.lua') || lowerId.endsWith('.luau') || lowerId.endsWith('.txt')) {
+  if (lowerId.endsWith('.lua') || lowerId.endsWith('.luau') || lowerId.endsWith('.txt') || lowerId.endsWith('.json')) {
     headers["Content-Type"] = "text/plain; charset=utf-8";
   } else {
     headers["Content-Type"] = "application/octet-stream";
